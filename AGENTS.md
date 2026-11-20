@@ -29,6 +29,7 @@
 - `app/study/[id]/vote-timing/page.tsx`: Protected report page that shows each user's elapsed first-vote-to-last-vote span for a selected study (`/study/<id>/vote-timing?minVotes=<n>`), with KPI cards and an on-page timing table.
 - `app/study/[id]/user-upvote-rate/page.tsx`: Protected report page that shows per-user upvote percentage for a selected study (`/study/<id>/user-upvote-rate`), sorted by upvote percentage descending with user-level vote counts.
 - `app/study/[id]/selected-user-report/page.tsx`: Protected report page that starts with no selected users and lets you add/remove profiles through a searchable modal to calculate a combined upvote percentage for only the chosen subset (`/study/<id>/selected-user-report?userId=<profile>&userId=<profile>`).
+- `app/rate/page.tsx` + `app/actions/votes.ts`: Protected rating flow; each Funny / Not for me tap is saved to `caption_votes` under the signed-in user's JWT. Ratings made on the signed-out landing page are kept in localStorage and saved after sign-in by `components/pending-vote-sync.tsx`.
 - `app/captions/page.tsx`: Protected leaderboard of the most-liked captions (`captions` + `images`).
 - `app/flavors/page.tsx`: Protected humor-flavor breakdown (`humor_flavors` + caption like counts).
 - `components/app-switcher.tsx`: Top-bar menu linking to the in-app tabs (Dashboard, Top Captions, Humor Flavors, My Humor Page).

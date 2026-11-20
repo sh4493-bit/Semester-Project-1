@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 
+import { PENDING_VOTES_KEY } from "@/components/pending-vote-sync";
+
 export type TeaserCaption = {
   id: string;
   content: string;
@@ -31,6 +33,17 @@ export function LandingRateTeaser({
     if (picked) return;
     setPicked(value);
     setRated((count) => count + 1);
+    // Remember the rating so it is saved to the account after sign-in.
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(PENDING_VOTES_KEY) ?? "[]");
+      const votes = Array.isArray(stored) ? stored : [];
+      if (!votes.some((vote: { captionId: string }) => vote.captionId === caption.id)) {
+        votes.push({ captionId: caption.id, value: value === "up" ? 1 : -1 });
+      }
+      window.localStorage.setItem(PENDING_VOTES_KEY, JSON.stringify(votes));
+    } catch {
+      // storage may be unavailable; rating still works for this session
+    }
   };
 
   const next = () => {
@@ -77,7 +90,7 @@ export function LandingRateTeaser({
           {done ? (
             <form action={signInAction} className="mt-4">
               <p className="app-muted mb-3 text-sm">
-                That&apos;s {rated} ratings. Sign in to save your taste and get your own humor page.
+                That&apos;s {rated} ratings. Sign in and these ratings are saved to your account.
               </p>
               <button
                 type="submit"

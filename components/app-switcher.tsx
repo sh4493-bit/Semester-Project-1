@@ -7,7 +7,7 @@ const APPS = [
   { id: "dashboard", name: "Dashboard", description: "Study reports", href: "/" },
   { id: "captions", name: "Top Captions", description: "Most-liked", href: "/captions" },
   { id: "flavors", name: "Humor Flavors", description: "Style breakdown", href: "/flavors" },
-  { id: "weekly", name: "Weekly Summary", description: "Study trends", href: "/reports/weekly-study-summary" },
+  { id: "rate", name: "Rate Captions", description: "Saved votes", href: "/rate" },
 ];
 
 export function AppSwitcher() {

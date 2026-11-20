@@ -428,3 +428,39 @@ select
   (select count(*) from public.user_public_profiles where is_public)::int as page_count;
 
 grant select on public.public_landing_captions, public.public_landing_stats to anon, authenticated;
+
+-- ------------------------------------------------ saved voting (rating) ----
+-- Crowd totals per caption, readable by any signed-in user (counts only).
+create or replace view public.caption_vote_counts
+with (security_invoker = false, security_barrier = true)
+as
+select
+  caption_id,
+  (count(*) filter (where vote_value > 0))::int as up_votes,
+  (count(*) filter (where vote_value < 0))::int as down_votes
+from public.caption_votes
+group by caption_id;
+
+grant select on public.caption_vote_counts to authenticated;
+
+-- Keep captions.like_count in sync when someone rates.
+create or replace function public.sync_caption_like_count()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.captions
+  set like_count = (
+    select count(*) from public.caption_votes where caption_id = new.caption_id and vote_value > 0
+  )
+  where id = new.caption_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists caption_votes_sync_like_count on public.caption_votes;
+create trigger caption_votes_sync_like_count
+  after insert on public.caption_votes
+  for each row execute function public.sync_caption_like_count();

@@ -1,3 +1,4 @@
+import { PendingVoteSync } from "@/components/pending-vote-sync";
 import { LandingPage } from "@/components/landing-page";
 import { TopNavbar } from "@/components/top-navbar";
 import { createClient } from "@/utils/supabase/server";
@@ -99,6 +100,13 @@ export default async function Home() {
           >
             Create your humor page
           </Link>
+          <Link
+            href="/rate"
+            className="app-button app-button-primary mt-5 ml-3 inline-flex min-h-11 items-center rounded-full px-5 py-2 text-sm font-semibold transition"
+          >
+            Rate captions
+          </Link>
+          <PendingVoteSync />
 
           {latestStudyId ? (
             <>
