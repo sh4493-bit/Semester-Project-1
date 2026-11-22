@@ -74,19 +74,36 @@ export async function savePublicProfile(
   }
 
   if (featuredCaptionIds.length > 0) {
-    const { data: ownedCaptions, error: ownedCaptionsError } = await supabase
-      .from("captions")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("is_public", true)
-      .in("id", featuredCaptionIds);
+    const [{ data: publicCaptions, error: publicCaptionsError }, { data: likedVotes, error: likedVotesError }] =
+      await Promise.all([
+        supabase
+          .from("captions")
+          .select("id,user_id")
+          .eq("is_public", true)
+          .in("id", featuredCaptionIds),
+        supabase
+          .from("caption_votes")
+          .select("caption_id")
+          .eq("profile_id", user.id)
+          .gt("vote_value", 0)
+          .in("caption_id", featuredCaptionIds),
+      ]);
 
-    if (ownedCaptionsError) {
-      return { error: `Unable to verify your public captions: ${ownedCaptionsError.message}` };
+    if (publicCaptionsError || likedVotesError) {
+      return {
+        error: `Unable to verify your favorites: ${(publicCaptionsError ?? likedVotesError)?.message}`,
+      };
     }
 
-    if (ownedCaptions?.length !== featuredCaptionIds.length) {
-      return { error: "Only your own public captions can be showcased." };
+    const liked = new Set((likedVotes ?? []).map((vote) => vote.caption_id));
+    const allowed = new Set(
+      (publicCaptions ?? [])
+        .filter((caption) => caption.user_id === user.id || liked.has(caption.id))
+        .map((caption) => caption.id),
+    );
+
+    if (featuredCaptionIds.some((id) => !allowed.has(id))) {
+      return { error: "Only your own public captions or captions you rated funny can be showcased." };
     }
   }
 

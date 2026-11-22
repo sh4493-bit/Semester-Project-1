@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import {
   savePublicProfile,
@@ -18,6 +19,7 @@ type FavoriteOption = {
   captionId: string;
   content: string;
   imageUrl: string | null;
+  source: "liked" | "mine";
 };
 
 type ProfileEditorProps = {
@@ -81,6 +83,9 @@ export function ProfileEditor({
       return next;
     });
   };
+
+  const previewTheme = PUBLIC_PROFILE_THEMES[theme];
+  const previewFavorite = favorites.find((favorite) => selectedCaptionIds.has(favorite.captionId));
 
   const shareUsername =
     isPagePublic && publishedUsername
@@ -221,7 +226,10 @@ export function ProfileEditor({
           </div>
           {favorites.length === 0 ? (
             <p className="app-muted mt-4 rounded-2xl border border-dashed border-slate-400/30 p-5 text-sm">
-              No public captions to showcase yet. Create a caption in Crackd and make it public to fill your page.
+              Nothing to showcase yet. Rate a few captions as funny and they will show up here.
+              <Link href="/rate" className="ml-1 font-semibold underline">
+                Rate captions
+              </Link>
             </p>
           ) : (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -239,6 +247,9 @@ export function ProfileEditor({
                       onChange={() => toggleFavorite(favorite.captionId)}
                     />
                     Showcase this favorite
+                    <span className="app-muted ml-auto font-normal">
+                      {favorite.source === "liked" ? "You rated it funny" : "Your caption"}
+                    </span>
                   </span>
                   {favorite.imageUrl ? (
                     <Image
@@ -301,7 +312,22 @@ export function ProfileEditor({
       </form>
 
       <aside className="app-panel h-fit rounded-3xl p-5 sm:p-7">
-        <p className="app-kicker text-xs font-semibold uppercase tracking-[0.2em]">Your link</p>
+        <p className="app-kicker text-xs font-semibold uppercase tracking-[0.2em]">Live preview</p>
+        <div className={`mt-3 rounded-2xl border p-4 text-center ${previewTheme.page} ${previewTheme.card}`}>
+          <span className="text-3xl">{avatarEmoji || "😎"}</span>
+          <p className="mt-2 text-lg font-semibold">{displayName || "Your name"}</p>
+          <p className="text-xs opacity-65">@{username.toLowerCase() || "username"}</p>
+          {bio ? <p className="mt-2 text-xs opacity-80">{bio}</p> : null}
+          <p className={`mt-3 text-xs font-semibold ${previewTheme.accent}`}>
+            {selectedCaptionIds.size} favorite{selectedCaptionIds.size === 1 ? "" : "s"} showcased
+          </p>
+          {previewFavorite ? (
+            <p className="mt-1 text-xs opacity-80">“{previewFavorite.content}”</p>
+          ) : null}
+        </div>
+        <p className="app-muted mt-2 text-xs">Updates as you type. Save to publish changes.</p>
+
+        <p className="app-kicker mt-6 text-xs font-semibold uppercase tracking-[0.2em]">Your link</p>
         <h2 className="mt-2 text-xl font-semibold">Ready when you are</h2>
         <p className="app-muted mt-2 break-all text-sm">
           /u/{shareUsername}
@@ -309,6 +335,15 @@ export function ProfileEditor({
         <div className="mt-4">
           <CopyProfileLinkButton username={shareUsername} disabled={!isPagePublic} />
         </div>
+        {isPagePublic && publishedUsername ? (
+          <Link
+            href={`/u/${publishedUsername}`}
+            target="_blank"
+            className="app-button mt-1 inline-flex min-h-11 items-center rounded-full px-5 py-2 text-sm font-semibold"
+          >
+            Open my public page
+          </Link>
+        ) : null}
         {!isPagePublic ? (
           <p className="app-muted -mt-2 text-xs">
             Save and make your page public to share this link.

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 
@@ -8,6 +9,30 @@ import { createClient } from "@/utils/supabase/server";
 type PublicProfilePageProps = {
   params: Promise<{ username: string }>;
 };
+
+export async function generateMetadata({ params }: PublicProfilePageProps): Promise<Metadata> {
+  const { username: rawUsername } = await params;
+  const username = rawUsername.toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_-]{2,19}$/.test(username)) {
+    return { title: "Page not found · The LOL Report" };
+  }
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("user_public_profile_showcase")
+    .select("display_name, bio, avatar_emoji")
+    .eq("username", username)
+    .limit(1);
+  const profile = data?.[0];
+  if (!profile) {
+    return { title: "Page not found · The LOL Report" };
+  }
+
+  return {
+    title: `${profile.avatar_emoji} ${profile.display_name} (@${username}) · The LOL Report`,
+    description: profile.bio || `${profile.display_name}'s humor page on The LOL Report.`,
+  };
+}
 
 export default async function PublicProfilePage({ params }: PublicProfilePageProps) {
   const { username: rawUsername } = await params;
@@ -46,6 +71,9 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   const upvotePct =
     votesCast > 0 ? Math.round(((style?.upvotes_cast_count ?? 0) / votesCast) * 100) : null;
   const topFlavor = style?.top_flavor?.replace(/[-_]+/g, " ") ?? null;
+  const alsoInto = (style?.top_flavors ?? [])
+    .filter((flavor) => flavor !== style?.top_flavor)
+    .map((flavor) => flavor.replace(/[-_]+/g, " "));
 
   const theme = PUBLIC_PROFILE_THEMES[profile.theme];
   const favorites = (rows ?? []).filter(
@@ -99,6 +127,11 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
               ))}
             </dl>
           )}
+          {alsoInto.length > 0 ? (
+            <p className="mt-3 text-sm opacity-75">
+              Also into: <span className="capitalize">{alsoInto.join(", ")}</span>
+            </p>
+          ) : null}
         </section>
 
         <section className="mt-8">

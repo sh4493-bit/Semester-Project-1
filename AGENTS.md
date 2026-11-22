@@ -17,8 +17,8 @@
 - `app/`: App Router pages and layout.
 - `app/login/page.tsx`: Google-only login route (public).
 - `app/auth/callback/route.ts`: OAuth callback + `profiles.is_superadmin` gate.
-- `app/profile/page.tsx`: Protected editor for a user's personal public humor page.
-- `app/u/[username]/page.tsx`: Public, privacy-filtered humor page; unknown and private usernames share a not-found state.
+- `app/profile/page.tsx`: Protected editor for a user's personal public humor page. Showcase favorites are the user's own public captions plus captions they rated funny (`caption_votes.vote_value > 0`); the editor has a live preview. `app/actions/public-profile.ts` enforces the same rule on save.
+- `app/u/[username]/page.tsx`: Public, privacy-filtered humor page with per-user title/description metadata and a humor-style summary (signature + top styles from liked captions); unknown and private usernames share a not-found state.
 - `app/reports/study-comparison/page.tsx`: Protected report page that compares two studies (`?studyA=<id>&studyB=<id>`) using caption coverage, vote-derived metrics, overlap counts, and deltas in an on-page comparison table.
 - `app/reports/new-style-report/page.tsx`: Redirect helper that resolves a selected or latest study ID 7+ into the new study interface report route.
 - `app/reports/study-detail/page.tsx`: Redirect helper that resolves a selected or latest study into the study detail route.

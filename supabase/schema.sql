@@ -241,9 +241,17 @@ select
      where v.profile_id = profile.profile_id)::int as votes_cast_count,
   (select count(*) from public.caption_votes v
      where v.profile_id = profile.profile_id and v.vote_value > 0)::int as upvotes_cast_count,
-  (select c.voice from public.captions c
-     where c.user_id = profile.profile_id and c.is_public and c.voice is not null
-     group by c.voice order by count(*) desc, c.voice limit 1) as top_flavor
+  -- Signature style = the humor flavor of the captions this person liked most.
+  (select f.slug from public.caption_votes v
+     join public.captions c on c.id = v.caption_id
+     join public.humor_flavors f on f.id = c.humor_flavor_id
+     where v.profile_id = profile.profile_id and v.vote_value > 0
+     group by f.slug order by count(*) desc, f.slug limit 1) as top_flavor,
+  array(select f.slug from public.caption_votes v
+     join public.captions c on c.id = v.caption_id
+     join public.humor_flavors f on f.id = c.humor_flavor_id
+     where v.profile_id = profile.profile_id and v.vote_value > 0
+     group by f.slug order by count(*) desc, f.slug limit 3) as top_flavors
 from public.user_public_profiles as profile
 where profile.is_public = true;
 

@@ -9,6 +9,7 @@ type FavoriteOption = {
   captionId: string;
   content: string;
   imageUrl: string | null;
+  source: "liked" | "mine";
 };
 
 const makeUsernameSuggestion = (email: string | undefined, userId: string) => {
@@ -35,7 +36,8 @@ export default async function ProfileEditorPage() {
   const [
     { data: profile, error: profileError },
     { data: nameData, error: nameError },
-    { data: captions, error: captionsError },
+    { data: ownCaptions, error: ownCaptionsError },
+    { data: likedVotes, error: likedVotesError },
   ] = await Promise.all([
     supabase
       .from("user_public_profiles")
@@ -49,6 +51,13 @@ export default async function ProfileEditorPage() {
       .eq("user_id", user.id)
       .eq("is_public", true)
       .order("created_datetime_utc", { ascending: false }),
+    supabase
+      .from("caption_votes")
+      .select("caption_id")
+      .eq("profile_id", user.id)
+      .gt("vote_value", 0)
+      .order("created_datetime_utc", { ascending: false })
+      .limit(100),
   ]);
 
   if (profileError) {
@@ -57,13 +66,38 @@ export default async function ProfileEditorPage() {
   if (nameError) {
     throw new Error(`Unable to load your display name: ${nameError.message}`);
   }
-  let favorites: FavoriteOption[] = [];
-
-  if (captionsError) {
-    throw new Error(`Unable to load your public captions: ${captionsError.message}`);
+  if (ownCaptionsError) {
+    throw new Error(`Unable to load your public captions: ${ownCaptionsError.message}`);
+  }
+  if (likedVotesError) {
+    throw new Error(`Unable to load your ratings: ${likedVotesError.message}`);
   }
 
-  const imageIds = [...new Set(captions?.map((caption) => caption.image_id) ?? [])];
+  // Favorites come from your own activity: captions you rated funny, plus your own public captions.
+  const ownIds = new Set((ownCaptions ?? []).map((caption) => caption.id));
+  const likedIds = [...new Set((likedVotes ?? []).map((vote) => vote.caption_id))].filter(
+    (id) => !ownIds.has(id),
+  );
+
+  let likedCaptions: { id: string; content: string | null; image_id: string }[] = [];
+  if (likedIds.length > 0) {
+    const { data, error: likedCaptionsError } = await supabase
+      .from("captions")
+      .select("id,content,image_id")
+      .in("id", likedIds)
+      .eq("is_public", true);
+    if (likedCaptionsError) {
+      throw new Error(`Unable to load captions you liked: ${likedCaptionsError.message}`);
+    }
+    likedCaptions = data ?? [];
+  }
+
+  const captions = [
+    ...likedCaptions.map((caption) => ({ ...caption, source: "liked" as const })),
+    ...(ownCaptions ?? []).map((caption) => ({ ...caption, source: "mine" as const })),
+  ];
+
+  const imageIds = [...new Set(captions.map((caption) => caption.image_id))];
   let imageUrls = new Map<string, string>();
   if (imageIds.length > 0) {
     const { data: images, error: imagesError } = await supabase
@@ -83,10 +117,11 @@ export default async function ProfileEditorPage() {
     );
   }
 
-  favorites = (captions ?? []).map((caption) => ({
+  const favorites: FavoriteOption[] = captions.map((caption) => ({
     captionId: caption.id,
     content: caption.content?.trim() || "A public caption",
     imageUrl: imageUrls.get(caption.image_id) ?? null,
+    source: caption.source,
   }));
 
   const nameFromProfile = [nameData?.first_name, nameData?.last_name]

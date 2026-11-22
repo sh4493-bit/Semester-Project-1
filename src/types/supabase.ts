@@ -2201,6 +2201,7 @@ export type Database = {
         Row: {
           public_caption_count: number | null
           top_flavor: string | null
+          top_flavors: string[] | null
           upvotes_cast_count: number | null
           username: string | null
           votes_cast_count: number | null
